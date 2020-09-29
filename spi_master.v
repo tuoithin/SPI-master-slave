@@ -102,10 +102,10 @@ module spi_master
                  SS <= 1'b0;
                  Done <= 1'b0;
 // MOSI is driven for the case where a transmission is started and CPHA = 0
-                 if ( !ClkPha )
-                   MOSI <= txreg[DATA_WIDTH-1];
-                 else
-                   MOSI <= 1'b0;
+//                 if ( !ClkPha )
+//                   MOSI <= txreg[DATA_WIDTH-1];
+//                 else
+//                   MOSI <= 1'b0;
                end
         LEAD : begin
                 SClk <= ClkPol ^ current_state[0];
@@ -155,6 +155,13 @@ module spi_master
         bitcnt <= 0;
       else
         bitcnt <= {bitcnt[DATA_WIDTH-2:0], 1'b1};
+
+// MOSI is driven for the case where a transmission is started and CPHA = 0
+    always @ (negedge SS)
+      if ( ClkPha == 1'b0 ) begin
+        MOSI <= TxData[DATA_WIDTH-1];
+        txreg <= {TxData[DATA_WIDTH-2:0], 1'b0};
+      end
 
 // Handles the rising edge of SClk for all 4 SPI modes
     always @ (posedge SClk)
