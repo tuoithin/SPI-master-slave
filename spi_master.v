@@ -1,13 +1,13 @@
 module spi_master 
     #(
-      parameter DATA_WIDTH = 8,
-      parameter SPI_MODE = 0
+      parameter DATA_WIDTH = 8
      )
 
     (
       input Clk,                      // 50-MHz clock
       input Reset,                    // Global Reset
       input Start,                    // Start transmitting (also used to register TxData)
+      input [1:0] MODE,
       input [1:0] ClkDiv,             // Clock divider: 0 => /4
                                       //                1 => /8
                                       //                2 => /16
@@ -52,10 +52,10 @@ module spi_master
 // Generate polarity & phase signals for the various SPI modes
 // Clock Polarity. 0=Idle at '0' with pulse of '1'.
 //                 1=Idle at '1' with pulse of '0'
-    assign ClkPol = (SPI_MODE == 2) || (SPI_MODE == 3);
+    assign ClkPol = (MODE[1:0] == 2'b10) || (MODE[1:0] == 2'b11);
 // Clock Phase. 0=Change data on trailing edge, capture on leading edge.
 //              1=Change data on leading edge, capture on trailing edge.
-    assign ClkPha = (SPI_MODE == 1) || (SPI_MODE == 3);
+    assign ClkPha = (MODE[1:0] == 2'b01) || (MODE[1:0] == 2'b11);
 
 // midCyc logic. Asserts when the frequency is half cycle base on ClkDiv[1:0]
     assign next_count[4:0] = count[4:0] + 1;
@@ -149,8 +149,10 @@ module spi_master
     always @ (negedge SClk or posedge Reset)
       if ( Reset )
         bitcnt <= 0;
-      else
+      else if ( SS == 1'b0 )
         bitcnt <= {bitcnt[DATA_WIDTH-2:0], 1'b1};
+      else
+        bitcnt <= bitcnt;
 
 // MOSI is driven for the case where a transmission is started and CPHA = 0
     always @ (negedge SS)

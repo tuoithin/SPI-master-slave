@@ -1,10 +1,10 @@
 module spi_slave
     #(
-      parameter DATA_WIDTH = 8,
-      parameter SPI_MODE = 0
+      parameter DATA_WIDTH = 8
      )
 
     (
+      input [1:0] MODE,
       input [DATA_WIDTH-1:0] TxData,        // Transmit Data
 
       output Done,                          // Transmit Completed
@@ -27,10 +27,10 @@ module spi_slave
 // Generate polarity & phase signals for the various SPI modes
 // Clock Polarity. 0=Idle at '0' with pulse of '1'.
 //                 1=Idle at '1' with pulse of '0'
-    assign ClkPol = (SPI_MODE == 2) || (SPI_MODE == 3);
+    assign ClkPol = (MODE[1:0] == 2'b10) || (MODE[1:0] == 2'b11);
 // Clock Phase. 0=Change data on trailing edge, capture on leading edge.
 //              1=Change data on leading edge, capture on trailing edge.
-    assign ClkPha = (SPI_MODE == 1) || (SPI_MODE == 3);
+    assign ClkPha = (MODE[1:0] == 2'b01) || (MODE[1:0] == 2'b11);
 
 // Slave shift register
     reg [DATA_WIDTH-1:0] txreg;
@@ -81,6 +81,9 @@ module spi_slave
     assign Done = bitcnt[DATA_WIDTH-1];
 
     always @ (negedge SClk)
-      bitcnt <= {bitcnt[DATA_WIDTH-2:0], 1'b1};
+      if ( SS == 1'b0 )
+        bitcnt <= {bitcnt[DATA_WIDTH-2:0], 1'b1};
+      else
+        bitcnt <= bitcnt;
 
 endmodule

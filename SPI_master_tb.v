@@ -10,6 +10,8 @@ module SPI_master_tb ();
   reg  [7:0] TxData_s;
   wire [7:0] RxData_s;
 
+  reg  [1:0] SPIMODE;
+
   wire       SClk;
   wire       MISO;
   wire       MOSI;
@@ -24,11 +26,12 @@ module SPI_master_tb ();
   event      assert_start;
   event      deassert_start;
 
-  spi_master #(.DATA_WIDTH(8), .SPI_MODE(3))
+  spi_master #(.DATA_WIDTH(8))
               master  (
                       .Clk    (Clk),
                       .Reset  (Reset),
                       .Start  (Start),
+                      .MODE   (SPIMODE[1:0]),
                       .ClkDiv (2'b01),
                       .TxData (TxData_m[7:0]),
                       .Done   (Done),
@@ -40,8 +43,9 @@ module SPI_master_tb ();
                       .SS     (SS)
                       );
 
-  spi_slave #(.DATA_WIDTH(8), .SPI_MODE(3))
+  spi_slave #(.DATA_WIDTH(8))
               slave   (
+                      .MODE   (SPIMODE[1:0]),
                       .TxData (TxData_s[7:0]),
                       .Done   (SlvDone),
                       .RxData (RxData_s[7:0]),
@@ -57,6 +61,8 @@ module SPI_master_tb ();
         Reset    <= 1'b0;
         Start    <= 1'b0;
         TxData_m <= 8'b0;
+
+        SPIMODE[1:0] <= 2'b00;
 
         #30;
         -> trigger_reset;
@@ -78,6 +84,8 @@ module SPI_master_tb ();
           -> assert_start;
           @(deassert_start);
           #1500;
+          SPIMODE[1:0] <= $unsigned($random) % 3;
+          #100;
         end
       end
 
