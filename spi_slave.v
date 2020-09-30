@@ -5,10 +5,9 @@ module spi_slave
      )
 
     (
-//      input Reset,                          // Global Reset
       input [DATA_WIDTH-1:0] TxData,        // Transmit Data
 
-      output reg Done,                      // Transmit Completed
+      output Done,                          // Transmit Completed
       output reg [DATA_WIDTH-1:0] RxData,   // Receive Data
 
 // SPI Interface Signals
@@ -21,6 +20,9 @@ module spi_slave
     wire ClkPol;
     wire ClkPha;
     reg  Dout;
+
+// Bit counter
+    reg [DATA_WIDTH-1:0] bitcnt;
 
 // Generate polarity & phase signals for the various SPI modes
 // Clock Polarity. 0=Idle at '0' with pulse of '1'.
@@ -39,6 +41,7 @@ module spi_slave
     always @ (negedge SS)
       begin
         txreg <= TxData;
+        bitcnt <= 0;
         if ( ClkPha == 1'b0 )
           begin
             Dout <= TxData[DATA_WIDTH-1];
@@ -72,5 +75,12 @@ module spi_slave
                end
         default: ;
       endcase
+
+// data-bit count is clocked using SPI clock (SClk)
+// Set XferComplete when the MSB of the bit counter is '1'.
+    assign Done = bitcnt[DATA_WIDTH-1];
+
+    always @ (negedge SClk)
+      bitcnt <= {bitcnt[DATA_WIDTH-2:0], 1'b1};
 
 endmodule

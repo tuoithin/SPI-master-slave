@@ -92,6 +92,7 @@ module spi_master
                 SClk <= ClkPol;
                 MOSI <= 1'b0;
                 Done <= 1'b1;
+                bitcnt <= 0;
                 if ( !Start ) begin
                   next_state <= IDLE;
                 end else
@@ -101,11 +102,6 @@ module spi_master
                  next_state <= LEAD;
                  SS <= 1'b0;
                  Done <= 1'b0;
-// MOSI is driven for the case where a transmission is started and CPHA = 0
-//                 if ( !ClkPha )
-//                   MOSI <= txreg[DATA_WIDTH-1];
-//                 else
-//                   MOSI <= 1'b0;
                end
         LEAD : begin
                 SClk <= ClkPol ^ current_state[0];
@@ -129,7 +125,7 @@ module spi_master
       endcase
     end
 
-// Update State
+// Update State machine.
     always @ (posedge Clk or posedge Reset)
       if ( Reset )
         current_state <= IDLE;
