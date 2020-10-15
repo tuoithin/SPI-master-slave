@@ -20,6 +20,8 @@ module SPI_master_tb ();
   wire       Done;
   wire       SlvDone;
 
+  integer    error;
+
   event      trigger_reset;
   event      reset_complete;
 
@@ -45,6 +47,7 @@ module SPI_master_tb ();
 
   spi_slave #(.DATA_WIDTH(8))
               slave   (
+                      .Clk    (Clk),
                       .MODE   (SPIMODE[1:0]),
                       .TxData (TxData_s[7:0]),
                       .Done   (SlvDone),
@@ -62,6 +65,8 @@ module SPI_master_tb ();
         Start    <= 1'b0;
         TxData_m <= 8'b0;
 
+        error    <= 0;
+
         SPIMODE[1:0] <= 2'b00;
 
         #30;
@@ -69,7 +74,7 @@ module SPI_master_tb ();
 
         @(reset_complete);
 
-        #60;
+        #110;
         TxData_m <= 8'b1010_0101;
         TxData_s <= 8'b1101_0110;
 
@@ -77,16 +82,46 @@ module SPI_master_tb ();
         @(deassert_start);
         #1500;
 
-        repeat (10) begin
+//        @(posedge Done);
+        if ( RxData_m != TxData_s ) begin
+          error <= error + 1;
+          $display("time: %0t RxData_m: %0h TxData_s: %0h", $time, RxData_m, TxData_s);
+        end
+
+//        @(posedge SlvDone);
+        if ( RxData_s != TxData_m ) begin
+          error <= error + 1;
+          $display("time: %0t RxData_s: %0h TxData_m: %0h", $time, RxData_s, TxData_m);
+        end
+
+        repeat (20) begin
           TxData_m <= $unsigned($random) % 255;
           TxData_s <= $unsigned($random) % 255;
 
           -> assert_start;
           @(deassert_start);
           #1500;
+
+//          @(posedge Done);
+          if ( RxData_m != TxData_s ) begin
+            error <= error + 1;
+            $display("time: %0t RxData_m: %0h TxData_s: %0h", $time, RxData_m, TxData_s);
+          end
+
+//          @(posedge SlvDone);
+          if ( RxData_s != TxData_m ) begin
+            error <= error + 1;
+            $display("time: %0t RxData_s: %0h TxData_m: %0h", $time, RxData_s, TxData_m);
+          end
+
           SPIMODE[1:0] <= $unsigned($random) % 3;
           #100;
         end
+
+        if ( error != 0 )
+          $display("Mismatch error");
+        else
+          $display("TEST PASSED");
       end
 
     initial
